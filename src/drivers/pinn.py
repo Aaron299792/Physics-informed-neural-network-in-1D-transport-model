@@ -175,10 +175,10 @@ def robin_n(X, y):
     T_hat = y[:, 1:2]
 
     # T^3/n and log(T^3/n)
-    T3n = torch.clamp((T_hat ** 3) / (n_hat + EPS), min=1e-12,max=1e12)
+    T3n = (T_hat ** 3) / (n_hat + EPS)
     logT3n = torch.log(T3n)
     D_hat = n_hat / torch.sqrt(T_hat + EPS) * (logT3n + C)
-    D_hat = torch.clamp(D_hat, min=1e-8, max=1e8)
+    #D_hat = torch.clamp(D_hat, min=1e-8, max=1e8)
 
     return -n_hat / (LAMBDA_N * D_hat)
 
@@ -187,10 +187,10 @@ def robin_T(X, y):
     T_hat = y[:, 1:2]
 
     # T^3/n and log(T^3/n)
-    T3n = torch.clamp((T_hat ** 3) / (n_hat + EPS), min=1e-12,max=1e12)
+    T3n = (T_hat ** 3) / (n_hat + EPS)
     logT3n = torch.log(T3n)
     D_hat = n_hat / torch.sqrt(T_hat + EPS) * (logT3n + C)
-    D_hat = torch.clamp(D_hat, min=1e-8, max=1e8)
+    #D_hat = torch.clamp(D_hat, min=1e-8, max=1e8)
 
     return -T_hat / (LAMBDA_T * D_hat)
 
