@@ -1,34 +1,41 @@
 #!/bin/bash
 
-if [ "$#" -eq 0 ]; then
-    echo "Error: No arguments provided. First argument must be the number of the data profile. Ex. verify path '../../data/profile/profiles_[number].dat' and use plot.sh [number]"
+if [ "$#" -lt 2 ]; then
+    echo "Error: No filepath to parameters file provided. Ex. verify path '../../params/[param file] and use plot [param file] [number]'"
+    echo "Error: No arguments provided. Second argument must be the number of the data profile. Ex. verify path '../../data/profile/profiles_[number].dat' and use plot.sh [param file] [number]"
     echo "Optional argument: hex_code for color of density plot."
     echo "Optional argument: hex_code for color of temperature plot "
     exit 1
 fi
 
-path=../../data/profile/profiles_$1.dat
+export hidden_layers=$(yq '.hidden_layers' ../../parameters/$1)
+export num_domain=$(yq '.model_params.NUM_DOMAIN' ../../parameters/$1)
+export loss_weights=$(yq '.model_params.LOSS_WEIGHTS' ../../parameters/$1)
+export iter1=$(yq '.model_params.ADAM_ITER1' ../../parameters/$1)
+export iter2=$(yq '.model_params.ADAM_ITER2' ../../parameters/$1)
 
-if [ "$#" -eq 1 ]; then
+path=../../data/profile/profiles_$2.dat
+
+if [ "$#" -eq 2 ]; then
     color1="#B00000"
     color2="#0A36AF"
-elif [ "$#" -eq 2]; then
-    color1=$2
+elif [ "$#" -eq 3 ]; then
+    color1=$4
     color2="#0A36AF"
 else
-    color1=$2
-    color2=$3
+    color1=$3
+    color2=$4
 fi
 
-gnuplot -c density.gnu density_profile_$1.tex $path $color1
-gnuplot -c temperature.gnu temperature_profile_$1.tex $path $color2
+gnuplot -c density.gnu density_profile_$2.tex $path $color1 "$hidden_layers" "$num_domain" "$loss_weights" "$iter1" "$iter2"
+gnuplot -c temperature.gnu temperature_profile_$2.tex $path $color2 "$hidden_layers" "$num_domain" "$loss_weights" "$iter1" "$iter2"
 
 echo "Plot saved. PATH: ../../plots"
-exec > /dev/null 2>&1
+#exec > /dev/null 2>&1
 
-pdflatex density_profile_$1.tex
-pdflatex temperature_profile_$1.tex
+pdflatex density_profile_$2.tex
+pdflatex temperature_profile_$2.tex
 
-rm *.tex *.aux *.log *.eps density_profile_$1-* temperature_profile_$1-*
+rm *.tex *.aux *.log *.eps density_profile_$2-* temperature_profile_$2-*
 
 mv *pdf ../../plots

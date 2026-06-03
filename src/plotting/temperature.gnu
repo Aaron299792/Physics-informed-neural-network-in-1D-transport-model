@@ -2,6 +2,12 @@ set term epslatex standalone color
 
 set output ARG1
 
+set label "$L=$ " . ARG4 at graph 0.67, graph 0.93 right
+set label "$N_c=$ " . ARG5 at graph 0.675, graph 0.86 right
+set label "$w=$ " . ARG6 at graph 0.95, graph 0.79 right
+set label "$t_1=$ " . ARG7 at graph 0.905, graph 0.93 right
+set label "$t_2=$ " . ARG8 at graph 0.92, graph 0.86 right
+
 set ylabel "\\textbf{Temperature} $\\hat{T}$"
 set xlabel "\\textbf{Radius} $\\rho$"
 set border linewidth 5
