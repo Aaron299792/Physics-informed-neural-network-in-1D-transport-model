@@ -1,48 +1,21 @@
-\section{Normalized System of ODEs}
-Al hacer las siguientes transformaciones sobre las ecuaciones \eqref{eq:ODE1}  y \eqref{eq:ODE2}
+\section{Sistema normalizado de ecuaciones diferenciales ordinarias}
+Al hacer las siguientes transformaciones sobre las ecuaciones \eqref{eq:partODE}  y \eqref{eq:energyODE} Haciendo siguiente cambio de variables para normalizar el problema:
 
-\begin{eqnarray}
-	\rho = \dfrac{r}{R}, \quad \quad \hat{n}(\rho) = \dfrac{n(r)}{n_{max}} , \quad \quad \hat{T}(\rho) = \dfrac{T(r)}{T_{max}}	
+\begin{equation}
+	\rho = \frac{r}{R}, \quad \hat{n} = \frac{n - n_{min}}{\Delta_n}, \quad  \hat{T} = \frac{T - T_{min}}{\Delta_T},
+\end{equation}
+
+con $\Delta_x = x_{max} - x_{min}$. Se procedió a adimensionar las ODEs y remover posibles denominadores que pudieran presentar valores singulares durante la solución con la PINN, de tal forma que se llega a una ODEs normalizadas numéricamente estables. Para la ODE del flujo de partículas:
+
+\begin{eqnarray}\label{eq:partODEnorm}
+	&&\frac{n}{\Delta_n}\frac{T}{\Delta_T}\left[\rho\frac{d^2\hat{n}}{d\rho^2} + \frac{d\hat{n}}{d\rho}\right] + \rho\frac{T}{\Delta_T}\left(\frac{d\hat{n}}{d\rho}\right)^2- \frac{\rho}{2}\frac{n}{\Delta_n}\frac{d\hat{n}}{d\rho}\frac{d\hat{T}}{d\rho}+ \frac{R^2\Delta_T^{1/2}}{h\Delta_n^2}\left(\frac{T}{\Delta_T}\right)^{3/2}\rho N(\hat{n}, \hat{T}) = 0
 \end{eqnarray}
 
-este cambio de variable presupone que la densidad y temperatura mínima a la que puede llegar el sistema es $n_{min} = 0 cm^{-3}$ y $T_{min} = 0 eV$  respectivamente. 
+donde se usa $x / \Delta_x =\hat{x} + x_{min}/\Delta_x$. De forma similar se llega a la expresión para la ODE del flujo de energía:
 
-Evidentemente, este caso es un vacío perfecto y el cero absoluto que no son físicamente consistentes. Sin embargo, la idea es impedir estos casos usando la red y forzando que no se consideren. De otra forma, si se toman otros valores mínimos, no posible llegar a una forma adimensional; las expresiones no factorizan. 
-
-Reemplazando en las ecuaciones \eqref{eq:particles}, \eqref{eq:energy} se llega a un sistema de ODEs adimensional normalizado:
-
-\begin{eqnarray}\label{eq:particlesnorm}
-	\frac{d}{d\rho}\left(\rho\hat{D}_\perp(\rho) \frac{d\hat{n}(\rho)}{d\rho}\right) - \frac{R^2 n_{max}}{D_0}\langle\sigma v\rangle_{rec}( T_{max}\hat{T}(\rho) )n^2(\rho)\rho \nonumber\\
-	+ \frac{R^2 n_0}{D_0}\langle\sigma v\rangle_{ion}(T_{max}\hat{T}(\rho))\hat{n}(\rho) \rho=0\quad
+\begin{eqnarray}\label{eq:energyODEnorm}
+	&& \frac{47}{10}\left(\frac{n}{\Delta_n}\right)^2\frac{T}{\Delta_T}\left(\rho\frac{d^2\hat{T}}{d\rho^2} + \frac{d\hat{T}}{d\rho}\right) +  \frac{52\rho}{5}\frac{n}{\Delta_n}\frac{T}{\Delta_T}\frac{d\hat{n}}{d\rho}\frac{d\hat{T}}{d\rho} -\frac{47\rho}{20}\left(\frac{n}{\Delta_n}\frac{d\hat{n}}{d\rho}\right)^2 - \frac{3w_b}{\Delta_T}\frac{T}{\Delta_T}\left(\frac{n}{\Delta_n}\right)^2 \nonumber\\ 
+	&&- \frac{R^2\Delta_T^{1/2}}{h\Delta_n^2}\left(\frac{T}{\Delta_T}\right)^{3/2}\frac{\rho}{\Delta_T} \biggl\{TN(\hat{n},\hat{T})+S(\hat{n},\hat{T}) -\frac{P_{ext}}{\sqrt{2\pi}\sigma}\exp{\left[-\frac{1}{2}\left(\frac{R}{\sigma}\right)^2(\rho-\hat{\mu})^2\right]}\biggl\} = 0
 \end{eqnarray}
 
-donde 
-
-\begin{eqnarray}
-	D_0 &=& \frac{2 \sqrt{2 \pi m}}{3}\frac{e^{3/2}}{(4\pi \varepsilon_0 B)^2}\frac{n_{max}}{\sqrt{T_{max}}} \\
-	C &=&  \log{\left[\frac{16\pi^2}{n_{max}}\left(\frac{\varepsilon_0 T_{max}}{e}\right)^3\right]} \\
-	\hat{D}_\perp(\hat{n},\hat{T}) &=& \frac{\hat{n}}{\sqrt{\hat{T}}} \left[ C + \log{\left(\frac{\hat{T^3}}{\hat{n}}\right)} \right].
-\end{eqnarray}
-
-Para el caso de la ecuación de energía se obtiene:
-
-\begin{eqnarray}
-	&& \frac{d}{d\rho}\left(\rho \hat{n}(\rho) \hat{D}_\perp(\rho)\frac{d\hat{T}(\rho)}{d\rho} \right) + \frac{15}{47}\rho\left(\frac{d\hat{n(\rho)}}{d\rho}\right)\left(\frac{d\hat{T}(\rho)}{d\rho}\right) \nonumber \\
-	&+& \frac{15}{47}\hat{T}(\rho)\frac{d}{d\rho}\left(\rho \hat{D}_\perp(\rho) \frac{d\hat{n}(\rho)}{d\rho}\right) \nonumber \\ 
-	&+& \frac{10}{47}\frac{P_{ext}}{\sigma\sqrt{2\pi}}\frac{R^2}{n_{max}T_{max}D_0}\rho\exp{\left[-\frac{1}{2}\left(\frac{R}{\sigma}\right)^2(\rho - \langle \rho \rangle)^2\right]}\nonumber \\ \nonumber\\
-	&-& \frac{10}{47}\frac{ e n_{max}R^2}{T_{max} D_0}\biggl[E_{rec}\langle \sigma v \rangle_{rec}(T_{max}\hat{T}(\rho))\nonumber \\   
-	&+& E_{rad}^i\langle \sigma v \rangle_{rad}^i(T_{max}\hat{T}(\rho))\biggr]\hat{n}^2(\rho)\rho \nonumber \\ 
-	&-& \frac{10}{47}\frac{e n_0R^2}{T_{max}D_0}\biggl[ E_{ion}\langle \sigma v \rangle_{ion}(T_{max}\hat{T}(\rho)) \nonumber\\ 
-	&+& E_{rad}^0\langle \sigma v \rangle_{ion}(T_{max}\hat{T}(\rho)) \biggr]\hat{n}(\rho)\rho \nonumber \\ 
-	&-&\frac{15}{47}\frac{e^3(BR)^2}{mT_{max}}\frac{\rho \hat{n}^2(\rho)}{\sqrt{\hat{T}(\rho)}}\left[ C + \log{ \left( \frac{\hat{T}^3(\rho)}{\hat{n}(\rho)}\right)} \right] = 0 \quad
-\end{eqnarray}
-
-con,
-
-\begin{eqnarray}
-	\kappa_0 = \frac{47\sqrt{2\pi m}}{15}\frac{e^{3/2}}{(4\pi \varepsilon_0 B)^2}\frac{n^2_{max}}{\sqrt{T_{max}}} = \frac{47}{10}n_{max}D_0\\ \nonumber\\
-	\hat{\kappa}(\hat{n}, \hat{T}) = \frac{\hat{n}^2}{\sqrt{\hat{T}}} \left[ C + \log{\left(\frac{\hat{T}^3}{\hat{n}} \right)}\right] = \hat{n}\hat{D}_\perp(\hat{n}, \hat{T}).
-\end{eqnarray}
-
-
-Es importante considerar que la temperatura $T_{max}$ tiene unidades de $eV$, la densidad $n_{max}$ de $cm^{-3}$ y finalmente el radio $R$ unidades de $cm$.
+con $w_b \equiv e^2R^2B^2 / m_i$ y $\hat{\mu} = \langle \rho \rangle$. Los parámetros libres del modelo son $\{\hat{\mu}, \sigma\}$ para el modelado del perfil Gaussiano de deposición de potencia. Mientras que los parámetros $\{n_{min}, T_{min}, n_{max}, T_{max}, P_{ext}, B, R\}$ se pueden ajustar con los datos típicos del dispositivo que se está estudiando.
