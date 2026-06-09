@@ -4,19 +4,20 @@ metadata:
 # PHYSICS PARAMS
 #--------------------------
 physical_params:
-  B : 2.2
-  E_ION : 13.6
-  T_MIN : 1.0e-3
-  N_MIN : 1.0e-3
-  T_MAX : 7000.0
-  N_MAX : 2.0E13
-  R : 72.0
+  B : 2.3 #T
+  E_ION : 13.6 #eV
+  T_MIN : 38.5 #eV
+  N_MIN : 6.95e12 #cm^{-3}
+  T_MAX : 507.5 #eV
+  N_MAX : 5.38e13 #cm^{-3}
+  R : 16.0 #cm
   LAMBDA_N : 1.0e-3
   LAMBDA_T : 1.0e-3
-  P_EXT : 1.0e18
-  VAR : 0.15
-  MU : 0.1
-  N_0 : 1.0e8
+  P_EXT : 1.0e16 # eV/cm^3 s
+  VAR : 1.0
+  MU : 0.15
+  N_0 : 1.0e2
+  l : 17.5
 #---------------------------
 # SAFETY EPSILON
 #---------------------------
@@ -24,16 +25,16 @@ epsilon : 1.0E-40
 #---------------------------
 # NETWORK PARAMETERS
 #---------------------------
-hidden_layers : [32]
+hidden_layers : 32
 #---------------------------
 # MODEL PARAMETERS
 #---------------------------
 model_params:
   NUM_DOMAIN : 1000
-  NUM_BOUNDARY : 2
-  NUM_TEST : 300
-  LOSS_WEIGHTS : [1, 1, 0.1, 0.1, 0.1, 0.1]
-  ADAM_ITER1 : 1000
+  NUM_BOUNDARY : 1
+  NUM_TEST : 100
+  LOSS_WEIGHTS : [1.0, 1.0, 0.1, 0.1, 0.1, 0.1]
+  ADAM_ITER1 : 2000
   ADAM_ITER2 : 5000
 #---------------------------
 # PREDICTION PARAMETERS
