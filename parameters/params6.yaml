@@ -14,8 +14,8 @@ physical_params:
   LAMBDA_N : 1.0e-3
   LAMBDA_T : 1.0e-3
   P_EXT : 1.0e16 # eV/cm^3 s
-  VAR : 1.0
-  MU : 0.15
+  VAR : 5.0
+  MU : 0.1
   N_0 : 1.0e2
   l : 17.5
 #---------------------------
@@ -35,7 +35,7 @@ model_params:
   NUM_TEST : 100
   LOSS_WEIGHTS : [1.0, 1.0, 0.1, 0.1, 0.1, 0.1]
   ADAM_ITER1 : 2000
-  ADAM_ITER2 : 5000
+  ADAM_ITER2 : 7000
 #---------------------------
 # PREDICTION PARAMETERS
 #---------------------------
