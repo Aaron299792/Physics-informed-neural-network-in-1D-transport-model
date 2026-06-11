@@ -55,11 +55,11 @@ P_EXT = params['physical_params']['P_EXT'] # cm^{-3}
 VAR = params['physical_params']['VAR']
 MU = params['physical_params']['MU']
 l = params['physical_params']['l']
-h = (e / (epsilon_0 * B))**2 * np.sqrt(electron_mass * l * l / np.pi**3)
+h = 1.0e10 * (epsilon_0 * B)**(-2) * e**1.5 * l * np.sqrt(electron_mass / np.pi**3)
 WB = 1.0e-4 * e * R * R * B * B / (1836.7 * electron_mass)
 DELTA_T = T_MAX - T_MIN
 DELTA_N = N_MAX - N_MIN
-NORMC1 =  1.0e-10 * R * R * np.sqrt(e * DELTA_T) / (h * DELTA_N)
+NORMC1 =  R * R * np.sqrt(DELTA_T) / (h * DELTA_N)
 #--------------------------------
 # MODEL PARAMETERS
 #--------------------------------
@@ -118,24 +118,30 @@ def ode(rho, y):
     TD = Tf(T_hat)
     n = nD * DELTA_N
     T = TD * DELTA_T
-    NnD = - n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
+
     SnD = n * (p_rad_i.rate(n, T) + p_rec.rate(n, T))  + N0 * (p_rad_0.rate(n, T) + E_ION * sigma_ion.rate(n,T))
 
     Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T) * torch.exp(-0.5 * (1 / VAR)**2 * (rho - MU)**2)
 
+    #Correct and checked expression for electron density
+    NnD = - n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
     term11 = nD * TD * (rho * d2n_rho + dn_rho)
     term12 = rho * TD * dn_rho * dn_rho
     term13 = -0.5 * rho * nD * dn_rho * dT_rho
     term14 = rho * NORMC1 * nD * TD * torch.sqrt(TD) *NnD
     ode1 = term11 + term12 + term13 + term14
 
-    term21 = 4.7 * nD * nD * TD * (rho * d2T_rho + dT_rho)
-    term22 = 10.4 * rho * nD * TD * dn_rho * dT_rho
-    term23 = -2.35 * rho * nD * nD * dT_rho * dT_rho
-    term24 = 3.0e-4 * WB * nD * nD * TD / DELTA_T
-    term25 = - NORMC1 * rho * TD * torch.sqrt(TD) * TD * NnD
-    term26 = 1.0
-    ode2 = term21 + term22 + term23 + term24 + term25
+    # Up to term25 everything is in order, not but results actually.
+    SnD = (n * (p_rad_i.rate(n, T) + p_rec.rate(n, T)) \
+        + N0 * p_rad_0.rate(n, T)) / e + N0 *E_ION * sigma_ion.rate(n,T)
+    term21 = 4.7 * nD * nD * TD * (rho * d2T_rho + dT_rho) #checked and correct
+    term22 = 10.4 * rho * nD * TD * dn_rho * dT_rho #checked and correct
+    term23 = -2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
+    # Here everything goes smoth
+    term25 = - rho * NORMC1 * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
+    term26 = -rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
+    term27 = torch.exp(-0.5 *  (R * (rho - MU) / VAR) ** 2)
+    ode2 = term21 + term22 + term23 + term25 + term26 + term27
     return [ode1, ode2]
 
 def dn_op(rho, y, X):
@@ -159,8 +165,17 @@ x_eval = geom.uniform_points(OBSERVATIONS, True)
 solver = pinn(1, HIDDEN_LAYERS, 2, NUM_DOMAIN, NUM_BOUNDARY, NUM_TEST, ADAM_ITER1, ADAM_ITER2)
 sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=LOSS_WEIGHTS, refinement=True)
 
+res = np.array(res)
+#print(f"{DELTA_N:.2e}")
+#print(DELTA_T)
+#print(sigma_rec.rate(torch.tensor([N_MIN]), torch.tensor([T_MIN])))
+
 #P0 = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
 #print(f"{P0:.3e}")
+
+print(res.mean())
+print(res.max())
+print(res.std())
 
 plt.scatter(x_eval, sol[:,0], marker='h', color='k', label="n(x) PINN")
 plt.scatter(x_eval, sol[:,1], marker='p', color='b', label="T(x) PINN")
@@ -170,8 +185,6 @@ plt.legend()
 plt.show()
 print("success")
 
-"""
-for i in range(x_eval.shape[0]):
-    print(x_eval[i][0], " ", sol[i, 0], " ", sol[i,1])
-"""
+#for i in range(x_eval.shape[0]):
+#    print(x_eval[i][0], " ", sol[i, 0], " ", sol[i,1])
 
