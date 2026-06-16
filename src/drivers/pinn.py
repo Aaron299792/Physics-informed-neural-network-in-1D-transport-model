@@ -56,7 +56,8 @@ VAR = params['physical_params']['VAR']
 MU = params['physical_params']['MU']
 l = params['physical_params']['l']
 h = 1.0e10 * (epsilon_0 * B)**(-2) * e**1.5 * l * np.sqrt(electron_mass / np.pi**3)
-WB = 1.0e-4 * e * R * R * B * B / (1836.7 * electron_mass)
+#WB = 1.0e-4 * e * R * R * B * B / (1836.7 * electron_mass)
+WB = 1.0
 DELTA_T = T_MAX - T_MIN
 DELTA_N = N_MAX - N_MIN
 NORMC1 =  R * R * np.sqrt(DELTA_T) / (h * DELTA_N)
@@ -124,11 +125,11 @@ def ode(rho, y):
     Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T) * torch.exp(-0.5 * (1 / VAR)**2 * (rho - MU)**2)
 
     #Correct and checked expression for electron density
-    NnD = - n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
+    NnD = -n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
     term11 = nD * TD * (rho * d2n_rho + dn_rho)
     term12 = rho * TD * dn_rho * dn_rho
     term13 = -0.5 * rho * nD * dn_rho * dT_rho
-    term14 = rho * NORMC1 * nD * TD * torch.sqrt(TD) *NnD
+    term14 = rho * NORMC1 * nD * TD * torch.sqrt(TD) * NnD
     ode1 = term11 + term12 + term13 + term14
 
     # Up to term25 everything is in order, not but results actually.
@@ -139,21 +140,26 @@ def ode(rho, y):
     term23 = -2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
     # Here everything goes smoth
     term25 = - rho * NORMC1 * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
-    term26 = -rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
-    term27 = torch.exp(-0.5 *  (R * (rho - MU) / VAR) ** 2)
-    ode2 = term21 + term22 + term23 + term25 + term26 + term27
+    term26 = - rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
+    #Troublesome terms
+    term24 = 3.0 * WB * TD * nD * nD / DELTA_T
+    term27 = torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2)
+    ode2 = term21 + term22 + term23 + term24 + term25 + term26 + term27
     return [ode1, ode2]
 
 def dn_op(rho, y, X):
     dn_rho = dde.grad.jacobian(y, rho, i=0, j=0)
-    return dn_rho
+    return dn_rho - 0.001 * y[:, 0:1]
 
 def dT_op(rho, y, X):
     dT_rho = dde.grad.jacobian(y, rho, i=1, j=0)
-    return dT_rho
+    return dT_rho - 0.001 * y[:, 1:2]
 
 def boundary(rho, on_boundary):
     return on_boundary and dde.utils.isclose(rho[0], 0)
+
+def boundary2(rho, on_boundary):
+    return on_boundary and dde.utils.isclose(rho[-1], 1)
 
 geom = dde.geometry.TimeDomain(0.0, 1.0)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)

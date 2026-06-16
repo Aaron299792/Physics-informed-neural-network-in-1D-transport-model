@@ -14,7 +14,7 @@ physical_params:
   LAMBDA_N : 1.0e-3
   LAMBDA_T : 1.0e-3
   P_EXT : 1.0e16 # eV/cm^3 s
-  VAR : 5.0
+  VAR : 10.0
   MU : 0.1
   N_0 : 1.0e2
   l : 17.5
@@ -31,9 +31,9 @@ hidden_layers : 32
 #---------------------------
 model_params:
   NUM_DOMAIN : 1000
-  NUM_BOUNDARY : 1
+  NUM_BOUNDARY : 2
   NUM_TEST : 100
-  LOSS_WEIGHTS : [1.0, 1.0, 0.1, 0.1, 0.1, 0.1]
+  LOSS_WEIGHTS : [0.01, 0.01, 0.001, 0.001, 0.001, 0.001]
   ADAM_ITER1 : 2000
   ADAM_ITER2 : 7000
 #---------------------------
