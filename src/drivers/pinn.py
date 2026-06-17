@@ -51,13 +51,14 @@ T_MIN = params['physical_params']['T_MIN']
 N_MAX = params['physical_params']['N_MAX'] # eV
 T_MAX = params['physical_params']['T_MAX'] # cm^-3
 R = params['physical_params']['R'] # cm
+LAMBDA_N = params['physical_params']['LAMBDA_N']
+LAMBDA_T = params['physical_params']['LAMBDA_T']
 P_EXT = params['physical_params']['P_EXT'] # cm^{-3}
 VAR = params['physical_params']['VAR']
 MU = params['physical_params']['MU']
 l = params['physical_params']['l']
 h = 1.0e10 * (epsilon_0 * B)**(-2) * e**1.5 * l * np.sqrt(electron_mass / np.pi**3)
-#WB = 1.0e-4 * e * R * R * B * B / (1836.7 * electron_mass)
-WB = 1.0
+WB = 1.0e-4 * e * (R * B)**2 / (1836.7 * electron_mass)
 DELTA_T = T_MAX - T_MIN
 DELTA_N = N_MAX - N_MIN
 NORMC1 =  R * R * np.sqrt(DELTA_T) / (h * DELTA_N)
@@ -77,7 +78,6 @@ OBSERVATIONS = params['num_observations']
 # Device Settings
 # -------------------------------
 DTYPE = torch.float64
-EPS   = params['epsilon']
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.set_default_device(DEVICE)
 
@@ -122,7 +122,7 @@ def ode(rho, y):
 
     SnD = n * (p_rad_i.rate(n, T) + p_rec.rate(n, T))  + N0 * (p_rad_0.rate(n, T) + E_ION * sigma_ion.rate(n,T))
 
-    Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T) * torch.exp(-0.5 * (1 / VAR)**2 * (rho - MU)**2)
+    Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
 
     #Correct and checked expression for electron density
     NnD = -n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
@@ -142,18 +142,20 @@ def ode(rho, y):
     term25 = - rho * NORMC1 * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
     term26 = - rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
     #Troublesome terms
-    term24 = 3.0 * WB * TD * nD * nD / DELTA_T
-    term27 = torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2)
+    term24 = 3.0 * 1.0e-5 * WB * rho * TD * nD * nD / DELTA_T
+    #term27 = 1000.0 * NORMC1 * rho * torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2) / np.sqrt(2.0 * np.pi)
+    #term27 = 100.0 * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.1) ** 2) / (np.sqrt(2.0 * np.pi) * 2.8)
+    term27 = Pow * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.1) ** 2)
     ode2 = term21 + term22 + term23 + term24 + term25 + term26 + term27
     return [ode1, ode2]
 
 def dn_op(rho, y, X):
     dn_rho = dde.grad.jacobian(y, rho, i=0, j=0)
-    return dn_rho - 0.001 * y[:, 0:1]
+    return dn_rho + LAMBDA_N * y[:, 0:1]
 
 def dT_op(rho, y, X):
     dT_rho = dde.grad.jacobian(y, rho, i=1, j=0)
-    return dT_rho - 0.001 * y[:, 1:2]
+    return dT_rho + LAMBDA_T * y[: 1:2]
 
 def boundary(rho, on_boundary):
     return on_boundary and dde.utils.isclose(rho[0], 0)
@@ -164,20 +166,19 @@ def boundary2(rho, on_boundary):
 geom = dde.geometry.TimeDomain(0.0, 1.0)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)
 bc2 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=1)
-bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary)
-bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary)
+bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary2)
+bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary2)
 
 x_eval = geom.uniform_points(OBSERVATIONS, True)
 solver = pinn(1, HIDDEN_LAYERS, 2, NUM_DOMAIN, NUM_BOUNDARY, NUM_TEST, ADAM_ITER1, ADAM_ITER2)
 sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=LOSS_WEIGHTS, refinement=True)
 
 res = np.array(res)
-#print(f"{DELTA_N:.2e}")
-#print(DELTA_T)
+#print(P_EXT / (DELTA_T * DELTA_N * np.sqrt(2.0 * np.pi) * VAR ))
 #print(sigma_rec.rate(torch.tensor([N_MIN]), torch.tensor([T_MIN])))
 
-#P0 = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
-#print(f"{P0:.3e}")
+P0 = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
+print(f"{P0:.3e}")
 
 print(res.mean())
 print(res.max())
@@ -193,4 +194,3 @@ print("success")
 
 #for i in range(x_eval.shape[0]):
 #    print(x_eval[i][0], " ", sol[i, 0], " ", sol[i,1])
-
