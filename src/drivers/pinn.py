@@ -183,7 +183,7 @@ print(f"{P0:.3e}")
 print(res.mean())
 print(res.max())
 print(res.std())
-
+"""
 plt.scatter(x_eval, sol[:,0], marker='h', color='k', label="n(x) PINN")
 plt.scatter(x_eval, sol[:,1], marker='p', color='b', label="T(x) PINN")
 plt.xlabel("x")
@@ -191,6 +191,10 @@ plt.ylabel("Solution")
 plt.legend()
 plt.show()
 print("success")
+"""
 
-#for i in range(x_eval.shape[0]):
-#    print(x_eval[i][0], " ", sol[i, 0], " ", sol[i,1])
+with open(pathOutput, 'w') as f:
+    for i in range(len(n_pred)):
+        print(x[i][0], " ", n_pred[i], " ", T_pred[i], file=f, sep='')
+
+print("Output written in '../../data/profile/'")
