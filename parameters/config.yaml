@@ -27,9 +27,9 @@ hidden_layers : 32
 #---------------------------
 model_params:
   NUM_DOMAIN : 1000
-  NUM_BOUNDARY : 2
+  NUM_BOUNDARY : 1
   NUM_TEST : 300
-  LOSS_WEIGHTS : [0.01, 0.01, 0.1, 0.1, 0.001, 0.001]
+  LOSS_WEIGHTS : [0.1, 0.001, 1.0, 1.0, 0.01, 0.01]
   ADAM_ITER1 : 2000
   ADAM_ITER2 : 5000
 #---------------------------

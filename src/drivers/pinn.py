@@ -113,7 +113,7 @@ def ode(rho, y):
     dT_rho = dde.grad.jacobian(y, rho, i=1)
     d2n_rho = dde.grad.hessian(y, rho, component=0)
     d2T_rho = dde.grad.hessian(y, rho, component=1)
-    nf = lambda x : x + T_MIN / DELTA_T
+    nf = lambda x : x + N_MIN / DELTA_N
     Tf = lambda x : x + T_MIN / DELTA_T
     nD = nf(n_hat)
     TD = Tf(T_hat)
@@ -124,7 +124,7 @@ def ode(rho, y):
 
     Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
 
-    #Correct and checked expression for electron density
+    # Particle Flux
     NnD = -n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
     term11 = nD * TD * (rho * d2n_rho + dn_rho)
     term12 = rho * TD * dn_rho * dn_rho
@@ -132,58 +132,58 @@ def ode(rho, y):
     term14 = rho * NORMC1 * nD * TD * torch.sqrt(TD) * NnD
     ode1 = term11 + term12 + term13 + term14
 
-    # Up to term25 everything is in order, not but results actually.
+    #Energy Flux
     SnD = (n * (p_rad_i.rate(n, T) + p_rec.rate(n, T)) \
         + N0 * p_rad_0.rate(n, T)) / e + N0 *E_ION * sigma_ion.rate(n,T)
     term21 = 4.7 * nD * nD * TD * (rho * d2T_rho + dT_rho) #checked and correct
     term22 = 10.4 * rho * nD * TD * dn_rho * dT_rho #checked and correct
-    term23 = -2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
-    # Here everything goes smoth
+    term23 = - 1.0e4 * 2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
     term25 = - rho * NORMC1 * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
     term26 = - rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
-    #Troublesome terms
-    term24 = 3.0 * 1.0e-5 * WB * rho * TD * nD * nD / DELTA_T
-    #term27 = 1000.0 * NORMC1 * rho * torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2) / np.sqrt(2.0 * np.pi)
-    #term27 = 100.0 * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.1) ** 2) / (np.sqrt(2.0 * np.pi) * 2.8)
-    term27 = Pow * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.1) ** 2)
-    ode2 = term21 + term22 + term23 + term24 + term25 + term26 + term27
+    term24 = 3.0 * WB * rho * TD * nD * nD / DELTA_T
+    term27 = Pow * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2)
+    ode2 =  1.0e-3 * (term21 + term22 + term23 + term24 + term25 + term26 + term27)
     return [ode1, ode2]
 
 def dn_op(rho, y, X):
-    dn_rho = dde.grad.jacobian(y, rho, i=0, j=0)
+    dn_rho = dde.grad.jacobian(y, rho, i=0)
     return dn_rho + LAMBDA_N * y[:, 0:1]
 
 def dT_op(rho, y, X):
-    dT_rho = dde.grad.jacobian(y, rho, i=1, j=0)
+    dT_rho = dde.grad.jacobian(y, rho, i=1)
     return dT_rho + LAMBDA_T * y[: 1:2]
 
 def boundary(rho, on_boundary):
-    return on_boundary and dde.utils.isclose(rho[0], 0)
+    return on_boundary and dde.utils.isclose(rho[0], 0.0)
 
 def boundary2(rho, on_boundary):
-    return on_boundary and dde.utils.isclose(rho[-1], 1)
+    return on_boundary and dde.utils.isclose(rho[-1], 1.0)
 
 geom = dde.geometry.TimeDomain(0.0, 1.0)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)
 bc2 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=1)
-bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary2)
-bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary2)
+bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary)
+bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary)
 
 x_eval = geom.uniform_points(OBSERVATIONS, True)
 solver = pinn(1, HIDDEN_LAYERS, 2, NUM_DOMAIN, NUM_BOUNDARY, NUM_TEST, ADAM_ITER1, ADAM_ITER2)
 sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=LOSS_WEIGHTS, refinement=True)
 
+n_pred = sol[:,0]
+T_pred = sol[:,1]
 res = np.array(res)
-#print(P_EXT / (DELTA_T * DELTA_N * np.sqrt(2.0 * np.pi) * VAR ))
-#print(sigma_rec.rate(torch.tensor([N_MIN]), torch.tensor([T_MIN])))
 
-P0 = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
-print(f"{P0:.3e}")
 
 print(res.mean())
 print(res.max())
 print(res.std())
-"""
+
+with open(pathOutput, 'w') as f:
+    for i in range(x_eval.shape[0]):
+        print(x_eval[i][0], n_pred[i], T_pred[i], file=f, sep=' ')
+
+print("Output written in '../../data/profile/'")
+
 plt.scatter(x_eval, sol[:,0], marker='h', color='k', label="n(x) PINN")
 plt.scatter(x_eval, sol[:,1], marker='p', color='b', label="T(x) PINN")
 plt.xlabel("x")
@@ -191,10 +191,3 @@ plt.ylabel("Solution")
 plt.legend()
 plt.show()
 print("success")
-"""
-
-with open(pathOutput, 'w') as f:
-    for i in range(len(n_pred)):
-        print(x[i][0], " ", n_pred[i], " ", T_pred[i], file=f, sep='')
-
-print("Output written in '../../data/profile/'")
