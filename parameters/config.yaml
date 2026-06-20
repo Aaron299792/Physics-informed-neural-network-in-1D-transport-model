@@ -1,5 +1,5 @@
 metadata:
-  experiment_name: "PINN Profile Determination"
+  device_name: "Rijnhuizen Tokamak Project (RTP)"
 #--------------------------
 # PHYSICS PARAMS
 #--------------------------
@@ -10,7 +10,7 @@ physical_params:
   N_MIN : 6.95e12 #cm^{-3}
   T_MAX : 507.5 #eV
   N_MAX : 5.38e13 #cm^{-3}
-  R : 16.0 #cm
+  A_MIN : 16.0 #cm
   LAMBDA_N : 1.0e-3
   LAMBDA_T : 1.0e-3
   P_EXT : 6.0e18 # eV/cm^3 s
