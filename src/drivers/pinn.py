@@ -2,15 +2,13 @@
 # Modules
 # -------------------------------
 import numpy as np
-from ruamel.yaml import YAML
-import argparse
 import torch
-import torch.nn.functional as F
 import deepxde as dde
+import argparse
+from scipy.constants import e
 import matplotlib.pyplot as plt
-from scipy.constants import epsilon_0, e, electron_mass
 from cherab.core.atomic import hydrogen
-from cherab.openadas.parse.adf11 import parse_adf11
+
 
 import sys
 import os
@@ -19,6 +17,8 @@ sys.path.append(os.path.abspath('../'))
 
 from modules import pinn
 from modules import RateCoeff2D as sv
+from modules import net_params as netp
+from modules import phys_params as pp
 
 parser = argparse.ArgumentParser(description='Parameter file name')
 
@@ -33,54 +33,15 @@ param_file = args.param_file
 out_file = args.out_file
 assert param_file != None, 'Input File was not find. Make sure it exists in the path "../../parameters". Usage --f [input filename] --o [output filename]'
 assert out_file != None, 'Output file not given. Usage --f [input filename] --o [output filename]'
-
-yaml = YAML(typ='safe')
-pathInput = '../../parameters/' + param_file
-pathOutput = '../../data/profile/' + out_file
-
-with open(pathInput, 'r') as file:
-    params = yaml.load(file)
-# -------------------------------
-# Global Constants and Parameters
-# -------------------------------
-B = params['physical_params']['B'] #T
-E_ION = params['physical_params']['E_ION'] #eV
-N0 = params['physical_params']['N_0'] # cm^{-3}
-N_MIN = params['physical_params']['N_MIN']
-T_MIN = params['physical_params']['T_MIN']
-N_MAX = params['physical_params']['N_MAX'] # eV
-T_MAX = params['physical_params']['T_MAX'] # cm^-3
-R = params['physical_params']['R'] # cm
-LAMBDA_N = params['physical_params']['LAMBDA_N']
-LAMBDA_T = params['physical_params']['LAMBDA_T']
-P_EXT = params['physical_params']['P_EXT'] # cm^{-3}
-VAR = params['physical_params']['VAR']
-MU = params['physical_params']['MU']
-l = params['physical_params']['l']
-h = 1.0e10 * (epsilon_0 * B)**(-2) * e**1.5 * l * np.sqrt(electron_mass / np.pi**3)
-WB = 1.0e-4 * e * (R * B)**2 / (1836.7 * electron_mass)
-DELTA_T = T_MAX - T_MIN
-DELTA_N = N_MAX - N_MIN
-NORMC1 =  R * R * np.sqrt(DELTA_T) / (h * DELTA_N)
-#--------------------------------
-# MODEL PARAMETERS
-#--------------------------------
-HIDDEN_LAYERS = params['hidden_layers']
-NUM_DOMAIN = params['model_params']['NUM_DOMAIN']
-NUM_BOUNDARY = params['model_params']['NUM_BOUNDARY']
-NUM_TEST = params['model_params']['NUM_TEST']
-LOSS_WEIGHTS = params['model_params']['LOSS_WEIGHTS']
-ADAM_ITER1 = params['model_params']['ADAM_ITER1']
-ADAM_ITER2 = params['model_params']['ADAM_ITER2']
-OBSERVATIONS = params['num_observations']
-
 # -------------------------------
 # Device Settings
 # -------------------------------
 DTYPE = torch.float64
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cpu'
 torch.set_default_device(DEVICE)
 
+pathInput = '../../parameters/' + param_file
+pathOutput = '../../data/profile/' + out_file
 
 """------------------------------
 Rate objects
@@ -95,99 +56,96 @@ power loss rates:
     p_rad_0: <E_rad^0><sigma nu>_rad^0 n
 ------------------------------"""
 
-sigma_ion = sv('../../data/adas/scd96_h.dat', hydrogen, n_max=N_MAX, T_max = T_MAX)
-sigma_rec = sv('../../data/adas/acd96_h.dat', hydrogen, n_max=N_MAX, T_max = T_MAX)
-p_rec = sv('../../data/adas/prb96_h.dat', hydrogen, n_max=N_MAX, T_max = T_MAX)
-p_rad_i = sv('../../data/adas/plt96_h.dat', hydrogen, n_max=N_MAX, T_max = T_MAX)
-p_rad_0 = sv('../../data/adas/prc96_h.dat', hydrogen, n_max=N_MAX, T_max = T_MAX)
+phys_params = pp(pathInput)
+net_params = netp(pathInput)
+
+sigma_ion = sv('../../data/adas/scd96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
+sigma_rec = sv('../../data/adas/acd96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
+p_rec = sv('../../data/adas/prb96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
+p_rad_i = sv('../../data/adas/plt96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
+p_rad_0 = sv('../../data/adas/prc96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 
 
 # -------------------------------
 # Functions
 # -------------------------------
 
-def ode(rho, y):
-    n_hat = y[:, 0:1]
-    T_hat = y[:, 1:2]
-    dn_rho = dde.grad.jacobian(y, rho, i=0)
-    dT_rho = dde.grad.jacobian(y, rho, i=1)
-    d2n_rho = dde.grad.hessian(y, rho, component=0)
-    d2T_rho = dde.grad.hessian(y, rho, component=1)
-    nf = lambda x : x + N_MIN / DELTA_N
-    Tf = lambda x : x + T_MIN / DELTA_T
-    nD = nf(n_hat)
-    TD = Tf(T_hat)
-    n = nD * DELTA_N
-    T = TD * DELTA_T
+def ode_gen(param = phys_params, sion = sigma_ion, srec = sigma_rec, prec = p_rec , pradi = p_rad_i, prad0 = p_rad_0):
+    def ode(rho, y):
+       n_hat = y[:, 0:1]
+       T_hat = y[:, 1:2]
+       dn_rho = dde.grad.jacobian(y, rho, i=0)
+       dT_rho = dde.grad.jacobian(y, rho, i=1)
+       d2n_rho = dde.grad.hessian(y, rho, component=0)
+       d2T_rho = dde.grad.hessian(y, rho, component=1)
+       nf = lambda x : x + param.nmin / param.Dn
+       Tf = lambda x : x + param.tmin / param.Dt
+       nD = nf(n_hat)
+       TD = Tf(T_hat)
+       n = nD * param.Dn
+       T = TD * param.Dt
 
-    SnD = n * (p_rad_i.rate(n, T) + p_rec.rate(n, T))  + N0 * (p_rad_0.rate(n, T) + E_ION * sigma_ion.rate(n,T))
+       # Particle Flux
+       NnD = -n * srec.rate(n, T) + param.n0 * sion.rate(n, T)
+       term11 = nD * TD * (rho * d2n_rho + dn_rho)
+       term12 = rho * TD * dn_rho * dn_rho
+       term13 = -0.5 * rho * nD * dn_rho * dT_rho
+       term14 = rho * param.norm * nD * TD * torch.sqrt(TD) * NnD
+       ode1 = term11 + term12 + term13 + term14
 
-    Pow = P_EXT / (np.sqrt(2.0 * np.pi) * VAR * DELTA_N * DELTA_T)
-
-    # Particle Flux
-    NnD = -n * sigma_rec.rate(n, T) + N0 * sigma_ion.rate(n, T)
-    term11 = nD * TD * (rho * d2n_rho + dn_rho)
-    term12 = rho * TD * dn_rho * dn_rho
-    term13 = -0.5 * rho * nD * dn_rho * dT_rho
-    term14 = rho * NORMC1 * nD * TD * torch.sqrt(TD) * NnD
-    ode1 = term11 + term12 + term13 + term14
-
-    #Energy Flux
-    SnD = (n * (p_rad_i.rate(n, T) + p_rec.rate(n, T)) \
-        + N0 * p_rad_0.rate(n, T)) / e + N0 *E_ION * sigma_ion.rate(n,T)
-    term21 = 4.7 * nD * nD * TD * (rho * d2T_rho + dT_rho) #checked and correct
-    term22 = 10.4 * rho * nD * TD * dn_rho * dT_rho #checked and correct
-    term23 = - 1.0e4 * 2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
-    term25 = - rho * NORMC1 * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
-    term26 = - rho * NORMC1 * nD * TD * torch.sqrt(TD) * SnD / DELTA_T #checked and correct
-    term24 = 3.0 * WB * rho * TD * nD * nD / DELTA_T
-    term27 = Pow * NORMC1 * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - MU) / 0.07) ** 2)
-    ode2 =  1.0e-3 * (term21 + term22 + term23 + term24 + term25 + term26 + term27)
-    return [ode1, ode2]
+       #Energy Flux
+       SnD = (n * (pradi.rate(n, T) + prec.rate(n, T)) \
+              + param.n0 * prad0.rate(n, T)) / e + param.n0 * param.e_ion * sion.rate(n,T)
+       Pow = param.p0 / (np.sqrt(2.0 * np.pi) * param.s * param.Dn * param.Dt)
+       term21 = 4.7 * nD * nD * TD * (rho * d2T_rho + dT_rho) #checked and correct
+       term22 = 10.4 * rho * nD * TD * dn_rho * dT_rho #checked and correct
+       term23 = - 1.0e4 * 2.35 * rho * nD * nD * dT_rho * dT_rho #checked and correct
+       term25 = - rho * param.norm * nD * TD * TD * torch.sqrt(TD) * NnD #checked and correct
+       term26 = - rho * param.norm * nD * TD * torch.sqrt(TD) * SnD / param.Dt #checked and correct
+       term24 = 3.0 * param.wb * rho * TD * nD * nD / param.Dt
+       term27 = Pow * param.norm * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - param.mu) * param.a / param.s) ** 2)
+       ode2 =  1.0e-3 * (term21 + term22 + term23 + term24 + term25 + term26 + term27)
+       return [ode1, ode2]
+    return ode
 
 def dn_op(rho, y, X):
     dn_rho = dde.grad.jacobian(y, rho, i=0)
-    return dn_rho + LAMBDA_N * y[:, 0:1]
+    return dn_rho
 
 def dT_op(rho, y, X):
     dT_rho = dde.grad.jacobian(y, rho, i=1)
-    return dT_rho + LAMBDA_T * y[: 1:2]
+    return dT_rho
 
 def boundary(rho, on_boundary):
     return on_boundary and dde.utils.isclose(rho[0], 0.0)
 
-def boundary2(rho, on_boundary):
-    return on_boundary and dde.utils.isclose(rho[-1], 1.0)
-
-geom = dde.geometry.TimeDomain(0.0, 1.0)
+ode = ode_gen()
+geom = dde.geometry.TimeDomain(0.0, 0.975)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)
 bc2 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=1)
 bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary)
 bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary)
 
-x_eval = geom.uniform_points(OBSERVATIONS, True)
-solver = pinn(1, HIDDEN_LAYERS, 2, NUM_DOMAIN, NUM_BOUNDARY, NUM_TEST, ADAM_ITER1, ADAM_ITER2)
-sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=LOSS_WEIGHTS, refinement=True)
+x_eval = geom.uniform_points(net_params.obs, True)
+solver = pinn(1, net_params.hidden_layers, 2, net_params.num_domain, net_params.num_boundary, net_params.obs, net_params.preiter, net_params.iter)
+sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
 
 n_pred = sol[:,0]
 T_pred = sol[:,1]
 res = np.array(res)
 
-
 print(res.mean())
 print(res.max())
 print(res.std())
 
-with open(pathOutput, 'w') as f:
-    for i in range(x_eval.shape[0]):
-        print(x_eval[i][0], n_pred[i], T_pred[i], file=f, sep=' ')
-
+#with open(pathOutput, 'w') as f:
+#    for i in range(x_eval.shape[0]):
+#        print(x_eval[i][0], n_pred[i], T_pred[i], file=f, sep=' ')
 print("Output written in '../../data/profile/'")
-
 plt.scatter(x_eval, sol[:,0], marker='h', color='k', label="n(x) PINN")
 plt.scatter(x_eval, sol[:,1], marker='p', color='b', label="T(x) PINN")
 plt.xlabel("x")
 plt.ylabel("Solution")
 plt.legend()
 plt.show()
-print("success")
+#print(x_eval)
