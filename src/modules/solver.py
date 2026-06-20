@@ -1,7 +1,6 @@
 import numpy as np
 import deepxde as dde
 import torch
-from torch.nn.functional import softplus
 
 class pinn:
     def __init__(self, input_size,
