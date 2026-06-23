@@ -104,7 +104,7 @@ def ode_gen(param = phys_params, sion = sigma_ion, srec = sigma_rec, prec = p_re
        term26 = - rho * param.norm * nD * TD * torch.sqrt(TD) * SnD / param.Dt #checked and correct
        term24 = 3.0 * param.wb * rho * TD * nD * nD / param.Dt
        term27 = Pow * param.norm * rho * TD * torch.sqrt(TD) * torch.exp(-0.5 * ((rho - param.mu) * param.a / param.s) ** 2)
-       ode2 =  1.0e-3 * (term21 + term22 + term23 + term24 + term25 + term26 + term27)
+       ode2 = 1.0e-3 * (term21 + term22 + term23 + term24 + term25 + term26 + term27)
        return [ode1, ode2]
     return ode
 
@@ -148,6 +148,8 @@ while True:
         sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
         print(f"attemps: {attempts}")
         break
+    except KeyboardInterrupt:
+        exit(1)
     except:
         attempts += 1
 

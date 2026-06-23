@@ -42,7 +42,12 @@ class pinn:
         model.compile("adam", lr=1e-4, loss_weights=weights)
         model.train(iterations=self.iter_size)
 
+
         if (refinement == True):
+            dde.optimizers.config.set_LBFGS_options(maxiter=2000,
+                                                    maxfun=2500,
+                                                    ftol=1e-9,
+                                                    gtol=1e-7)
             model.compile("L-BFGS", )
-            model.train(iterations=1000)
+            model.train()
         return model.predict(x_eval), model.predict(x_eval, operator = ode_func)
