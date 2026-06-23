@@ -106,9 +106,9 @@ nofootinbib]{revtex4}
 \affiliation    {Escuela de Física, Universidad de Costa Rica. Sede Rodrigo Facio \\ Escuela de Física, Instituto Tecnológico de Costa Rica. Campus Cartago}
 \date{\today} %la fecha sale de forma automática
 
-%\begin{abstract}
-%\lipsum[4]
-%\end{abstract}
+\begin{abstract}
+\lipsum[4]
+\end{abstract}
 
 \maketitle
 
@@ -126,20 +126,17 @@ En el campo de plasmas se presenta no linealidad y acoplamiento en las ecuacione
 Los coeficientes y los términos fuentes en los sistemas de EDs que aparecen en los modelos de transporte colisional no son constantes, además de no lineales, por lo que el uso de PINNs es un buen método por su capacidad de integrar y representar la no linealidad \cite{zhong2022}. Por ejemplo, se han implementado PINNs para la resolución de ecuaciones unidimensionales del transporte de plasma a bajas temperaturas \cite{zhong2022, trieschmann2023}. Esquemas de PINNs aplicados en el transporte en Tokamaks han sido comparados con métodos tradicionales de diferencias finitas en la resolución de PDEs con beneficios como reducción en el tiempo de convergencia \cite{seo2024}. En el transporte turbulento para encontrar campos consistentes con las ecuaciones del fluido doble de Braginskii \cite{mathews2021}. Sin embargo, no se ha reportado la implementación de una PINN aplicada al transporte perpendicular en geometría cilíndrica bajo el modelo de Braginskii reducido a ODEs con coeficientes dependientes de los perfiles.
 
 No se ha reportado el uso de PINNs para el caso del transporte perpendicular para una geometría cilíndrica en la solución de las ecuaciones de fluido de Braginskii como un problema de ODEs con coeficientes dependientes de los perfiles. Las PINNs integran la no linealidad y la física al problema directamente en las funciones de pérdida usando la autodiferenciación (AD) sin uso de grillas. 
-\section{Pregunta de investigación}
+
 La pregunta que se plantea contestar es: ¿puede una PINN, basada únicamente en restricciones físicas, reproducir perfiles radiales de densidad y temperatura en un plasma magnetizado bajo transporte clásico con un nivel de precisión comparable a datos experimentales del dispositivo de fusión Rijnhuizen Tokamak Project (RTP)?
-\section{Objetivo general}
+
 Implementar una Red Neuronal Informada por la Física (PINN) para la determinación de los perfiles radiales de densidad electrónica y temperatura electrónica en un plasma magnetizado cilíndrico que exhibe transporte clásico perpendicular al campo magnético.
-\vspace{- 4 mm}
-\subsection*{Objetivos específicos}
-\vspace{- 4 mm}
-\begin{enumerate}[noitemsep]
-			\item Formular las ecuaciones que relacionan la densidad electrónica y temperatura electrónica a partir de la teoría de transporte clásico perpendicular al campo magnético para la base del diseño de la PINN.
-			\item Diseñar la arquitectura de la PINN de acuerdo al modelo teórico mediante la definición de las capas, las funciones de activación y los hiperparámetros esenciales de la red. 
-			\item  Evaluar cuantitativamente la precisión de la PINN mediante la comparación con perfiles experimentales del RTP utilizando métricas como error cuadrático medio (MSE) y análisis de consistencia física.
-		\end{enumerate}
+
+Formular las ecuaciones que relacionan la densidad electrónica y temperatura electrónica a partir de la teoría de transporte clásico perpendicular al campo magnético para la base del diseño de la PINN.
+
+Diseñar la arquitectura de la PINN de acuerdo al modelo teórico mediante la definición de las capas, las funciones de activación y los hiperparámetros esenciales de la red. 
+
+Evaluar cuantitativamente la precisión de la PINN mediante la comparación con perfiles experimentales del RTP utilizando métricas como error cuadrático medio (MSE) y análisis de consistencia física.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\vspace{-4 mm}
 \section{Marco teórico}
 
 \subsection{Redes neuronales informadas por la física: fundamentos}
@@ -255,16 +252,14 @@ Para la derivación teórica de las ecuaciones que determinan los perfiles de de
 A partir de ahora se omitirá la etiqueta $\alpha$ que caracteriza la especie. Se llegará a un sistema de ODEs donde los perfiles serán normalizados respecto a $n_\text{max}$ y $T_\text{max}$ asumiendo que los perfiles alcanzan su máximo en el centro del plasma. El sistema resultante es de la forma
 \begin{equation}\label{eq:odesys}
 	\begin{cases}
-		F(r, \partial_r \hat{n}, \partial_r \hat{T}, \partial_r^2 \hat{n}, \partial_r^2\hat{T}, \bm{\Psi}) = 0, \quad r \in [0, R]\\
+		F(r, \partial_r \hat{n}, \partial_r \hat{T}, \partial_r^2 \hat{n}, \partial_r^2\hat{T}, \bm{\Psi}) = 0, \quad r \in [0, a]\\
 		G(r, \partial_r \hat{n}, \partial_r \hat{T}, \partial_r^2 \hat{n}, \partial_r^2\hat{T}, \bm{\Psi}) = 0, \\
 		\hat{n}(0) - 1 = 0, \quad \partial_r \hat{n}\big{|}_{r = 0} = 0, \\
 		\hat{T}(0) - 1 = 0, \quad \partial_r \hat{T}\big{|}_{r = 0} = 0,\\
-		\partial_r \hat{n} \big{|}_{r = R} + \hat{n}(R)/\lambda_n = 0\\
-		\partial_r \hat{T} \big{|}_{r = R}  + \hat{T}(R)/\lambda_T = 0
 	\end{cases}
 \end{equation}
 
-donde $\lambda_n$ y $\lambda_T$ son las escalas características de decaimiento en $r = R$ y con $\bm{\Psi} = \{R, B, n_0, P_\text{ext}, \lambda_n, \lambda_T, \mu, \sigma\}$ el conjunto de parámetros libres del sistema. $R$, el radio del plasma cilíndrico. Las condiciones en $r = 0$ corresponden a la simetría axial del sistema. El orden dos es de esperar por las ecuaciones \eqref{eq:diffusionP} y \eqref{eq:diffusionE}.
+con $\bm{\Psi} = \{a, B, n_0, P_\text{ext}, \mu, \sigma\}$ el conjunto de parámetros libres del sistema. $a$, el radio del plasma cilíndrico. Las condiciones en $r = 0$ corresponden a la simetría axial del sistema. El orden dos es de esperar por las ecuaciones \eqref{eq:diffusionP} y \eqref{eq:diffusionE}.
 \subsection{Implementación de la red}
 Se construirá una MLP inicializada con Xavier activada por una función $\tanh$. Consistirá en una capa de entrada $r$, múltiples capas ocultas $L$ y una capa de salida con dos neuronas $[\hat{n}(r; \bm{\theta}), \hat{T}(r; \bm{\theta})]$ en Python usando PyTorch \cite{pytorch} para construir la PINN. Se entrenará con GPUs del clúster de la Universidad de Costa Rica. Las funciones de pérdida serán puramente físicas de la forma \cite{raissi2019}:
 \begin{equation}
@@ -274,9 +269,9 @@ con
 {\small
 \begin{eqnarray}
 	\mathcal{L}_\mathcal{N} (r; \bm{\theta}) &=&\frac{1}{N_\mathcal{N}}\sum\limits_{I=1}^{N_\mathcal{N}} || \mathcal{N}(r, \partial_r \hat{n}, \partial_r \hat{T}, \partial_r^2 \hat{n}, \partial_r^2\hat{T}, \bm{\Psi}) ||_2^2\\
-	\mathcal{L}_{bc}(r; \bm{\theta}) &=& \frac{1}{N_{bc}}\sum\limits_{i=1}^{N_{bc}} || f_{bc}(r_0)||_2^2
+	\mathcal{L}_{bc}(r; \bm{\theta}) &=& \frac{1}{N_{bc}}\sum\limits_{i=1}^{N_{bc}} || f_{bc}(0)||_2^2
 \end{eqnarray}}
-aquí $N_i$ y $\omega_i$ son los puntos de colocación y pesos  para las funciones de pérdida respectivamente que determinarán experimentalmente junto con $L$ para mejorar la convergencia . $\mathcal{L}_\mathcal{N}$ corresponde a la contribución de la restricción impuesta por las ODEs  $\mathcal{N} = (F,G)$ y sus condiciones de frontera $\mathcal{L}_{bc}$ por $f_{bc}(r_0) = 0$ evaluadas en los extremos $r_0 = 0$ y $r_0 = R$.
+aquí $N_i$ y $\omega_i$ son los puntos de colocación y pesos  para las funciones de pérdida respectivamente que determinarán experimentalmente junto con $L$ para mejorar la convergencia . $\mathcal{L}_\mathcal{N}$ corresponde a la contribución de la restricción impuesta por las ODEs  $\mathcal{N} = (F,G)$ y sus condiciones de frontera $\mathcal{L}_{bc}$ por $f_{bc}(0) = 0$ evaluadas en el núcleo del plasma $r = 0$.
 
 Para optimizar los parámetros PINN se usará el esquema de dos optimizadores. Una primera optimización con Adam seguida de un refinamiento usando L-BFGS.
 
@@ -338,12 +333,81 @@ donde se usa $x / \Delta_x =\hat{x} + x_{min}/\Delta_x$. De forma similar se lle
 
 \begin{eqnarray}\label{eq:energyODEnorm}
 	&& \frac{47}{10}\left(\frac{n}{\Delta_n}\right)^2\frac{T}{\Delta_T}\left(\rho\frac{d^2\hat{T}}{d\rho^2} + \frac{d\hat{T}}{d\rho}\right) +  \frac{52\rho}{5}\frac{n}{\Delta_n}\frac{T}{\Delta_T}\frac{d\hat{n}}{d\rho}\frac{d\hat{T}}{d\rho} \nonumber\\
-	&& -\frac{47\rho}{20}\left(\frac{n}{\Delta_n}\frac{d\hat{n}}{d\rho}\right)^2 - \frac{3w_b}{\Delta_T}\frac{T}{\Delta_T}\left(\frac{n}{\Delta_n}\right)^2 \nonumber\\ 
+	&& -\frac{47\rho}{20}\left(\frac{n}{\Delta_n}\frac{d\hat{n}}{d\rho}\right)^2 + \frac{3w_b}{\Delta_T}\frac{T}{\Delta_T}\left(\frac{n}{\Delta_n}\right)^2 \nonumber\\ 
 	&&- \frac{R^2\Delta_T^{1/2}}{h\Delta_n^2}\left(\frac{T}{\Delta_T}\right)^{3/2}\frac{\rho}{\Delta_T} \biggl\{TN(\hat{n},\hat{T})+S(\hat{n},\hat{T})\nonumber\\
 	&&-\frac{P_{ext}}{\sqrt{2\pi}\sigma}\exp{\left[-\frac{1}{2}\left(\frac{R}{\sigma}\right)^2(\rho-\hat{\mu})^2\right]}\biggl\} = 0
 \end{eqnarray}
 
-con $w_b \equiv e^2R^2B^2 / m_i$ y $\hat{\mu} = \langle \rho \rangle$. Los parámetros libres del modelo son $\{\hat{\mu}, \sigma\}$ para el modelado del perfil Gaussiano de deposición de potencia. Mientras que los parámetros $\{n_{min}, T_{min}, n_{max}, T_{max}, P_{ext}, B, R\}$ se pueden ajustar con los datos típicos del dispositivo que se está estudiando.
+con $w_b \equiv e^2R^2B^2 / m_i$ y $\hat{\mu} = \langle \rho \rangle$. 
+
+\begin{table}[htb!]
+\caption{Parámetros físicos usados para la solución del sistema de ODEs usando la PINN para la obtención de los perfiles de densidad y temperatura electrónica del RTP.}
+\label{tab:physparams}
+\begin{tabular}{lll}
+\hline
+{Parámetro} & {Valor}       & {Unidades} \\ \hline
+$\log\Lambda$  & $17.5$               & adim              \\
+$\mu$                & $0.1$                & adim              \\
+$\sigma$           & $1.1$                & $\text{cm}$       \\
+$a$                   & $16.0$               & $\text{cm}$       \\
+$B$                  & $2.3$                & $\text{T}$        \\
+$E_\text{ion}$         & $13.6$               & $\text{eV}$       \\ 
+$T_\text{min}$         & $38.5$               & $\text{eV}$       \\
+$T_\text{max}$        & $507.5$              & $\text{eV}$       \\
+$n_\text{min}$         & $7.0 \times 10^{12}$ & $\text{cm}^{-3}$  \\
+$n_\text{max}$        & $5.4\times 10^{13}$  & $\text{cm}^{-3}$  \\
+$n_0$               & $1.0\times 10^{2}$   & $\text{cm}^{-3}$  \\
+$P_\text{ext}$               & $6.0\times 10^{18}$ & $\text{eV}\text{cm}^{-3}\text{s}^{-1}$ \\ \hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htb!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/rtp_den.pdf}
+	\caption{Perfiles de densidad electrónica medidos para el Tokamak RTP en diferentes descargas normalizados a la densidad máxima de la descarga. Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
+	\label{fig:exp_nprofilesM}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/rtp_temp.pdf}
+	\caption{Perfiles de temperatura electrónica medidos para el Tokamak RTP en diferentes descargas normalizados a la temperatura máxima de la descarga. Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
+	\label{fig:exp_TprofilesM}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/results_den.pdf}
+	\caption{Perfiles de densidad eletrónica obtenidos por la PINN comparado con el promedio de las mediciones para el  RTP sobre diferentes descargas así como un ajuste para densidad \cite{painter1991}.}
+	\label{fig:exp_nprofiles}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/temperature.pdf}
+	\caption{Perfiles de temperatura electrónica obtenidos por la PINN comparado con el promedio de las mediciones para el Tokamak RTP sobre diferentes descargas.}
+	\label{fig:exp_Tprofiles}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/residuals.pdf}
+	\caption{Residuos de los perfiles de densidad y temperatura electrónica respecto al sistema de ODEs.}
+	\label{fig:residual}
+\end{figure}
+
+\begin{figure}[ht!]
+	\centering
+	\includegraphics[width=\columnwidth]{../../plots/error.pdf}
+	\caption{Error relativo entre los perfiles de densidad y temperatura electrónica obtenidos por la PINN en comparación al promedio de las mediciones sobre el RTP.}
+	\label{fig:error}
+\end{figure}
+
+\section{Conclusiones}
+
+\section{Disponibilidad de datos}
+
+Los datos y el código que respaldan los resultados de este estudio están disponibles de forma abierta en GitHub~\cite{pinn2026}.
 
 \section{Uso de inteligencia artificial}
 
@@ -399,7 +463,7 @@ Se usó la LLM Claude para búsqueda bibliográfica, revisión ortográfica y es
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\bibliography{sample-paper}
 \bibliography{references}
-\bibliographystyle{apsrev4-1}
+\bibliographystyle{apsrev4-2}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
