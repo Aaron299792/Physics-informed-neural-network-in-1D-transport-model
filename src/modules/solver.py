@@ -43,6 +43,6 @@ class pinn:
         model.train(iterations=self.iter_size)
 
         if (refinement == True):
-            model.compile("L-BFGS")
-            model.train()
+            model.compile("L-BFGS", )
+            model.train(iterations=1000)
         return model.predict(x_eval), model.predict(x_eval, operator = ode_func)
