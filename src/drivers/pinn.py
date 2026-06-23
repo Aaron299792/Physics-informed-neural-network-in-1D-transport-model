@@ -5,10 +5,10 @@ import numpy as np
 import torch
 import deepxde as dde
 import argparse
+from datetime import datetime
 from scipy.constants import e
 import matplotlib.pyplot as plt
 from cherab.core.atomic import hydrogen
-
 
 import sys
 import os
@@ -24,15 +24,15 @@ parser = argparse.ArgumentParser(description='Parameter file name')
 
 parser.add_argument('--f', action='store', dest='param_file', type=str,
                     help='[STR] filename of the parameter file')
-parser.add_argument('--o', action='store', dest='out_file', type=str,
-                    help='[STR] filename of the output file')
-
+parser.add_argument('-v', '--visualize',
+                    action='store_true', dest='visualize',
+                    help='[bool] visualize plot of n and T after run on terminal')
 
 args = parser.parse_args()
 param_file = args.param_file
-out_file = args.out_file
+v = args.visualize
 assert param_file != None, 'Input File was not find. Make sure it exists in the path "../../parameters". Usage --f [input filename] --o [output filename]'
-assert out_file != None, 'Output file not given. Usage --f [input filename] --o [output filename]'
+
 # -------------------------------
 # Device Settings
 # -------------------------------
@@ -41,12 +41,18 @@ DEVICE = 'cpu'
 torch.set_default_device(DEVICE)
 
 pathInput = '../../parameters/' + param_file
-pathOutput = '../../data/profile/' + out_file
+pathOutput = '../../data/profile/' + datetime.now().strftime("%Y%m%d%H%M%S") + ".dat"
+
+#--------------------------------
+# Parameter loading
+#--------------------------------
+phys_params = pp(pathInput)
+net_params = netp(pathInput)
 
 """------------------------------
-Rate objects
+#Rate objects
 
-Particle sources and drains:
+#Particle sources and drains:
     sigma_ion: <sigma nu>_ion n0 * n
     sigma_rec: <sigma nu>_rec n^2
 
@@ -55,21 +61,15 @@ power loss rates:
     p_rad_i: <E_rad^i><sigma nu>_rad^i n^2
     p_rad_0: <E_rad^0><sigma nu>_rad^0 n
 ------------------------------"""
-
-phys_params = pp(pathInput)
-net_params = netp(pathInput)
-
 sigma_ion = sv('../../data/adas/scd96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 sigma_rec = sv('../../data/adas/acd96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 p_rec = sv('../../data/adas/prb96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 p_rad_i = sv('../../data/adas/plt96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 p_rad_0 = sv('../../data/adas/prc96_h.dat', hydrogen, n_max=phys_params.nmax, T_max = phys_params.tmax)
 
-
 # -------------------------------
 # Functions
 # -------------------------------
-
 def ode_gen(param = phys_params, sion = sigma_ion, srec = sigma_rec, prec = p_rec , pradi = p_rad_i, prad0 = p_rad_0):
     def ode(rho, y):
        n_hat = y[:, 0:1]
@@ -119,6 +119,17 @@ def dT_op(rho, y, X):
 def boundary(rho, on_boundary):
     return on_boundary and dde.utils.isclose(rho[0], 0.0)
 
+def visualize(x, sol1, sol2):
+    plt.scatter(x, sol1, marker='h', color='k', label="n(x) PINN")
+    plt.scatter(x, sol2, marker='p', color='b', label="T(x) PINN")
+    plt.xlabel("x")
+    plt.ylabel("Solution")
+    plt.legend()
+    plt.show()
+
+#--------------------------------
+# MAIN PROGRAM
+#--------------------------------
 ode = ode_gen()
 geom = dde.geometry.TimeDomain(0.0, 0.975)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)
@@ -127,25 +138,32 @@ bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary)
 bc4 = dde.icbc.OperatorBC(geom, dT_op, boundary)
 
 x_eval = geom.uniform_points(net_params.obs, True)
+
 solver = pinn(1, net_params.hidden_layers, 2, net_params.num_domain, net_params.num_boundary, net_params.obs, net_params.preiter, net_params.iter)
-sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
+
+attempts = 1
+
+while True:
+    try:
+        sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
+        print(f"attemps: {attempts}")
+        break
+    except:
+        attempts += 1
 
 n_pred = sol[:,0]
 T_pred = sol[:,1]
 res = np.array(res)
 
-print(res.mean())
-print(res.max())
-print(res.std())
+with open(pathOutput, 'w') as f:
+    phys_params.print(file=f)
+    net_params.print(file=f)
+    print(f"#DATA LAYOUT (NUMBER OF POINTS: {net_params.obs}):", file=f)
+    print("#RADIUS DENSITY TEMPERATURE RESIDUAL_N RESIDUAL_T", file=f)
+    print("#",'-'*65, file=f, sep='')
+    for i in range(x_eval.shape[0]):
+        print(x_eval[i][0], n_pred[i], T_pred[i], res[0][i][0], res[1][i][0], file=f, sep=' ')
+print("Output written in: ", pathOutput)
 
-#with open(pathOutput, 'w') as f:
-#    for i in range(x_eval.shape[0]):
-#        print(x_eval[i][0], n_pred[i], T_pred[i], file=f, sep=' ')
-print("Output written in '../../data/profile/'")
-plt.scatter(x_eval, sol[:,0], marker='h', color='k', label="n(x) PINN")
-plt.scatter(x_eval, sol[:,1], marker='p', color='b', label="T(x) PINN")
-plt.xlabel("x")
-plt.ylabel("Solution")
-plt.legend()
-plt.show()
-#print(x_eval)
+if v:
+    visualize(x_eval, sol[:,0], sol[:,1])
