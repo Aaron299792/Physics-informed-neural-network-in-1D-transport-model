@@ -10,8 +10,8 @@
 source /home/aaron.sanabria/miniconda3/etc/profile.d/conda.sh
 conda activate /home/aaron.sanabria/miniconda3/envs/cherab 
 
-export OMP_NUM_THREADS=14
-export MKL_NUM_THREADS=14
+export OMP_NUM_THREADS=15
+export MKL_NUM_THREADS=15
 export OMP_PROC_BIND=close
 export OMP_PLACES=cores
 
