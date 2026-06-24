@@ -37,10 +37,10 @@ class pinn:
         model = dde.Model(data, net)
 
         model.compile("adam", lr=1e-3, loss_weights=weights)
-        model.train(iterations=self.iter_pre)
+        model.train(iterations=self.iter_pre, verbose=0)
 
         model.compile("adam", lr=1e-4, loss_weights=weights)
-        model.train(iterations=self.iter_size)
+        model.train(iterations=self.iter_size, verbose=0)
 
 
         if (refinement == True):
@@ -49,5 +49,5 @@ class pinn:
                                                     ftol=1e-9,
                                                     gtol=1e-7)
             model.compile("L-BFGS", )
-            model.train()
+            model.train(verbose=0)
         return model.predict(x_eval), model.predict(x_eval, operator = ode_func)

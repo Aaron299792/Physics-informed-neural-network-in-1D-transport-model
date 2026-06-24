@@ -1,0 +1,38 @@
+metadata:
+  device_name: "Rijnhuizen Tokamak Project (RTP)"
+#--------------------------
+# PHYSICS PARAMS
+#--------------------------
+physical_params:
+  B : 2.3 #T
+  E_ION : 13.6 #eV
+  T_MIN : 38.5 #eV
+  N_MIN : 6.95e12 #cm^{-3}
+  T_MAX : 507.5 #eV
+  N_MAX : 5.38e13 #cm^{-3}
+  A_MIN : 16.0 #cm
+  LAMBDA_N : 1.0e-3
+  LAMBDA_T : 1.0e-3
+  P_EXT : 6.0e18 # eV/cm^3 s
+  VAR : 1.12
+  MU : 0.1
+  N_0 : 1.0e2
+  l : 17.5
+#---------------------------
+# NETWORK PARAMETERS
+#---------------------------
+hidden_layers : 128
+#---------------------------
+# MODEL PARAMETERS
+#---------------------------
+model_params:
+  NUM_DOMAIN : 1000
+  NUM_BOUNDARY : 1
+  NUM_TEST : 300
+  LOSS_WEIGHTS : [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+  ADAM_ITER1 : 2000
+  ADAM_ITER2 : 5000
+#---------------------------
+# PREDICTION PARAMETERS
+#---------------------------
+num_observations : 40
