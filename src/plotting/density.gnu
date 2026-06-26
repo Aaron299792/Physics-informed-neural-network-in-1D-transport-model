@@ -1,16 +1,41 @@
-set term epslatex standalone color
+set term epslatex standalone color ""
 
-set output ARG1
+set output "out.tex"
 
-set label "$L=$ " . ARG4 at graph 0.2, graph 0.93 right
-set label "$N_c=$ " . ARG5 at graph 0.235, graph 0.86 right
-set label "$w=$ " . ARG6 at graph 0.6, graph 0.79 right
-set label "$t_1=$ " . ARG7 at graph 0.43, graph 0.93 right
-set label "$t_2=$ " . ARG8 at graph 0.44, graph 0.86 right
+path1 = "../../data/profile/20260623214241.dat"
+path2 = "../../data/profile/20260623214559.dat"
+path3 = "../../data/profile/20260623214952.dat"
+path4 = "../../data/profile/20260623215527.dat"
+path5 = "../../data/profile/20260623215915.dat"
+path6 = "../../data/profile/20260623220438.dat"
+path7 = "../../data/profile/20260623221104.dat"
+path8 = "../../data/profile/20260623221705.dat"
+path9 = "../../data/profile/20260623222340.dat"
+path10 = "../../data/profile/20260623223520.dat"
+path11 = "../../data/profile/20260623223838.dat"
+path12 = "../../data/profile/20260623224320.dat"
+#set label "$L=$ " . ARG4 at graph 0.67, graph 0.93 right
+#set label "$L = 32$" at graph 0.82, graph 0.92 right
+#set label "its $= 7000$" at graph 0.90, graph 0.84 right
+#set label "$t_2=$ " . ARG8 at graph 0.92, graph 0.86 right
 
-set ylabel "\\textbf{Density} $\\hat{n}$"
-set xlabel "\\textbf{Radius} $\\rho$"
+#set logscale y
+#set format y "$10^{%L}$"
+set xrange [0:0.975]
+set yrange [0:1.1]
+set ylabel "\\textbf{Temperatura} $\\hat{T}$"
+set xlabel "\\textbf{Radio} $\\rho$"
 set border linewidth 5
-set key left bottom Left reverse
+set key maxrows 5 right top reverse Right
+set key width -2
 
-plot ARG2 using 1:2 with linespoints lw 2 pt 13 ps 1.5 lc rgb ARG3 title "density"
+plot path1 u 1:3 ps 1.2 pt 5 lc rgb "#0A36AF" title "$L_1$, $N_{c,1}$, $w_1$",\
+     path2 u 1:3 ps 1.2 pt 7 lc rgb "#670010" title "$L_2$, $N_{c,1}$, $w_1$",\
+     path3 u 1:3 ps 1.2 pt 9 lc rgb "#008000" title "$L_3$, $N_{c,1}$, $w_1$",\
+     path4 u 1:3 ps 1.2 pt 11 lc rgb "#0A36AF" title "$L_1$, $N_{c,2}$, $w_2$",\
+     path5 u 1:3 ps 1.2 pt 13 lc rgb "#670010" title "$L_2$, $N_{c,2}$, $w_2$",\
+     path6 u 1:3 ps 1.2 pt 15 lc rgb "#008000" title "$L_3$, $N_{c,2}$, $w_2$",\
+     path7 u 1:3 ps 1.2 pt 10 lc rgb "#0A36AF" title "$L_1$, $N_{c,3}$, $w_3$",\
+     path8 u 1:3 ps 1.2 pt 12 lc rgb "#670010" title "$L_2$, $N_{c,3}$, $w_3$",\
+     path9 u 1:3 ps 1.2 pt 14 lc rgb "#008000" title "$L_3$, $N_{c,3}$, $w_3$",\
+
