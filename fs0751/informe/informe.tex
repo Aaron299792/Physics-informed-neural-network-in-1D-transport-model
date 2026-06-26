@@ -21,7 +21,7 @@
 % ADVERTENCIA A LOS ESTUDIANTES: El preámbulo contiene un conjunto de paquetes necesarios para un compilado apropiado. Se recomienda no eliminar paquetes por completo aunque piense que no los necesita, coméntelos. Ud puede también agregar paquetes según lo vea conveniente.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\documentclass[aps,twocolumn,secnumarabic,nobalancelastpage,amsmath,amssymb,
+\documentclass[aps,twocolumn,secnumroman ,nobalancelastpage,amsmath,amssymb,
 nofootinbib]{revtex4}
 
 % nofootinbib es otra clase de documento que permite colocar notas al pie de
@@ -60,7 +60,6 @@ nofootinbib]{revtex4}
 \usepackage{multienum}                    %Permite colocar una lista en columnas
 \usepackage{tabularx}                     %Permite generar tabuladores con ancho ajustables
 \usepackage{booktabs}                     %Características especiales para tablas
-%\usepackage{caption}    
 
 
 %Cambia los caption
@@ -76,6 +75,7 @@ nofootinbib]{revtex4}
 \usepackage{float}
 \usepackage{lipsum}
 \setlength{\columnsep}{7.5mm} 
+%\usepackage{subcaption}
 
 \titleformat*{\section}{\normalsize\bfseries}
 \titleformat*{\subsection}{\normalsize\bfseries}				   
@@ -84,6 +84,7 @@ nofootinbib]{revtex4}
 \usepackage[pdfborder={0 0 0},colorlinks=false]{hyperref}
 \usepackage{xurl} %Paquete para poder incluir enlaces largos de url en las referencias.
 \usepackage{adjustbox}
+\renewcommand{\thetable}{\arabic{table}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 %                                 		%
 % Y ahora, el comienzo del documento... %
@@ -291,6 +292,8 @@ A partir de $n(r)$ y $T(r)$ de la PINN se compararán con perfiles medidos para 
 
 \section{Resultados y discusión}
 
+\subsection{Modelo de transporte clásico}
+
 Partiendo de las ecuaciones de flujo de partículas y energía Eqs. \eqref{eq:partflux} y \eqref{eq:energy}, las fuentes y sumideros de partículas y disipación de potencia Eqs. \eqref{eq:particlesSS} y \eqref{eq:energySS} en el plasma, la difusión de partículas y energía Eqs. \eqref{eq:diffusionP} y \eqref{eq:diffusionE}. Además de la aproximación del flujo de calor dado en la Eq. \eqref{eq:heatflux} se obtiene la siguiente ODE para la el flujo de partículas:
 
 \begin{eqnarray}\label{eq:partODE}
@@ -340,6 +343,11 @@ donde se usa $x / \Delta_x =\hat{x} + x_{min}/\Delta_x$. De forma similar se lle
 
 con $w_b \equiv e^2R^2B^2 / m_i$ y $\hat{\mu} = \langle \rho \rangle$. 
 
+\subsection{Simulaciones con diferentes parámetros}
+
+Con la PINN implementada para resolver el sistema de ODEs se procede a hacer pruebas con diferentes parámetros para estudiar su impacto y sensibilidad en las soluciones. En la Figura \ref{fig:resden} se tienen los residuos de la ODE de partículas, así como los diferentes perfiles de densidad electrónica calculados a partir de parámetros físicos típicos del RTP obtenidos de \cite{donne1994, roach2008}. Mismos que se presentan en la Tabla \ref{tab:physparams} que se usaron para todos los cálculos realizados.
+
+
 \begin{table}[htb!]
 \caption{Parámetros físicos usados para la solución del sistema de ODEs usando la PINN para la obtención de los perfiles de densidad y temperatura electrónica del RTP.}
 \label{tab:physparams}
@@ -361,39 +369,128 @@ $P_\text{ext}$               & $6.0\times 10^{18}$ & $\text{eV}\text{cm}^{-3}\te
 \end{tabular}
 \end{table}
 
-\begin{figure}[htb!]
-	\centering
-	\includegraphics[width=\columnwidth]{../../plots/rtp_den.pdf}
-	\caption{Perfiles de densidad electrónica medidos para el Tokamak RTP en diferentes descargas normalizados a la densidad máxima de la descarga. Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
-	\label{fig:exp_nprofilesM}
-\end{figure}
+En la Figura \ref{fig:resden} se puede observar que no hubo mayor impacto en el cambio de parámetros. Los residuos se mantienen en un orden similar, aunque al aumentar la profundidad de la red con $L = 128$ aumentó el valor de los residuos para todos los casos. Así mismo, al observar el panel (d) se puede ver que la gran mayoría de pruebas llegaron al mismo perfil de densidad. 
 
-\begin{figure}[ht!]
-	\centering
-	\includegraphics[width=\columnwidth]{../../plots/rtp_temp.pdf}
-	\caption{Perfiles de temperatura electrónica medidos para el Tokamak RTP en diferentes descargas normalizados a la temperatura máxima de la descarga. Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
-	\label{fig:exp_TprofilesM}
-\end{figure}
+\begin{figure*}[t] % [t] forces it to the top of the page, which is standard for full-width figures
+  \centering
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/resd123.pdf}
+    \vspace{1mm}
+    {(a) Parámetros de red $N_{c,1}$, $w_1$}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/resd456.pdf}
+    \vspace{1mm}
+    {(b) Parámetros de red $N_{c,2}$, $w_2$}
+  \end{minipage}
+  \hfill
+    \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/resd789.pdf}
+     \vspace{1mm}
+     {(c) Parámetros de red $N_{c,3}$, $w_3$}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/dens.pdf}
+     \vspace{1mm}
+     {(d) Parámetros de red con menor residuo}
+  \end{minipage}
+  \caption{Residuos de la función de pérdida para el ODE de partículas para diferentes números de capas ocultas $L$ para la PINN con:  (a) con puntos de colocación $N_{c,1}$ y pesos $w_1$, (b) con puntos de colocación $N_{c,2}$ y pesos $w_2$, (c) con puntos de colocación $N_{c,3}$ y pesos $w_3$ y (d) perfiles de densidad electrónica con distintos parámetros de la PINN.}
+  \label{fig:resden}
+\end{figure*}
 
-\begin{figure}[ht!]
-	\centering
-	\includegraphics[width=\columnwidth]{../../plots/results_den.pdf}
-	\caption{Perfiles de densidad eletrónica obtenidos por la PINN comparado con el promedio de las mediciones para el  RTP sobre diferentes descargas así como un ajuste para densidad \cite{painter1991}.}
-	\label{fig:exp_nprofiles}
-\end{figure}
+\begin{figure*}[t] % [t] forces it to the top of the page, which is standard for full-width figures
+  \centering
+    \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/rest123.pdf}
+     \vspace{1mm}
+    {(a) Parámetros de red $N_{c,1}$, $w_1$}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/rest456.pdf}
+     \vspace{1mm}
+    {(b) Parámetros de red $N_{c,2}$, $w_2$}
+  \end{minipage}
+  \hfill
+    \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/rest789.pdf}
+     \vspace{1mm}
+    {(c) Parámetros de red $N_{c,3}$, $w_3$}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/temps.pdf}
+     \vspace{1mm}
+    {(d) Perfiles de temperatura PINN}
+  \end{minipage}
+  \caption{Residuos de la función de pérdida para el ODE de energía para diferentes números de capas ocultas $L$ para la PINN con:  (a) con puntos de colocación $N_{c,1}$ y pesos $w_1$, (b) con puntos de colocación $N_{c,2}$ y pesos $w_2$, (c) con puntos de colocación $N_{c,3}$ y pesos $w_3$ y (d) perfiles de temperatura electrónica con distintos parámetros de la PINN.}
+\end{figure*}
 
-\begin{figure}[ht!]
-	\centering
-	\includegraphics[width=\columnwidth]{../../plots/temperature.pdf}
-	\caption{Perfiles de temperatura electrónica obtenidos por la PINN comparado con el promedio de las mediciones para el Tokamak RTP sobre diferentes descargas.}
-	\label{fig:exp_Tprofiles}
-\end{figure}
+\begin{figure*}[t] % [t] forces it to the top of the page, which is standard for full-width figures
+  \centering
+    \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/rtp_den.pdf}
+     \vspace{1mm}
+    {(a)}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/results_den.pdf}
+     \vspace{1mm}
+    {(b)}
+  \end{minipage}
+  \hfill
+    \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/rtp_temp.pdf}
+     \vspace{1mm}
+    {(c)}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.497\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{../../plots/temperature.pdf}
+     \vspace{1mm}
+    {(d)}
+  \end{minipage}
+  \caption{Perfiles de densidad y temperatura electrónica. En la columna izquierda se tienen las mediciones de descargas del RTP para densidad (a) y temperatura (d). En la columna derecha perfiles obtenidos por la PINN contra promedios de descarga para densidad  y ajuste (b) y para temperatura (d). Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
+\end{figure*}
 
+\begin{table}[]
+\caption{Parámetros de la PINN usados para la obtención de los perfiles de densidad y temperatura electrónica.}
+\label{tab:net_param}
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{lll}
+\hline
+\textbf{Parámetro} & \textbf{Descripción}       & \textbf{Valor}                       \\ \hline
+$L$                & Capas ocultas              & $32$                                 \\
+$N_c$              & Puntos de Colocación       & $1000$                               \\
+$N_b$              & Puntos en la frontera      & $1$                                  \\
+$N_t$              & Puntos de prueba           & $300$                                \\
+$w_i$              & Pesos de pérdida           & $[0.1, 0.001, 1.0, 1.0, 0.01, 0.01]$ \\
+its0               & Iteraciones de preparación & $2000$                               \\
+its                & Iteraciones de Adam        & $7000$                               \\
+$x_\text{eval}$    & Puntos de observación      & $40$                                 \\ \hline
+\end{tabular}}
+\end{table}
+  
 \begin{figure}[ht!]
 	\centering
 	\includegraphics[width=\columnwidth]{../../plots/residuals.pdf}
-	\caption{Residuos de los perfiles de densidad y temperatura electrónica respecto al sistema de ODEs.}
-	\label{fig:residual}
+	\caption{Residuos de la función de pérdida para el ODE de partículas y energía energía para los parámetros usados que mejor se ajustan a las mediciones.}
+	\label{fig:exp_Tprofiles}
 \end{figure}
 
 \begin{figure}[ht!]
@@ -402,6 +499,24 @@ $P_\text{ext}$               & $6.0\times 10^{18}$ & $\text{eV}\text{cm}^{-3}\te
 	\caption{Error relativo entre los perfiles de densidad y temperatura electrónica obtenidos por la PINN en comparación al promedio de las mediciones sobre el RTP.}
 	\label{fig:error}
 \end{figure}
+
+\begin{table}[]
+\caption{MSE calculado para distintos parámetros de la PINN respecto al promedio de los datos medidos en el RTP. Datos obtenidos de the ITPA International Multi-Tokamak Confinement Profile Database \cite{roach2008}, bajo libre acceso.}
+\label{tab:mse}
+\begin{tabular}{ccc}
+\hline
+\multicolumn{1}{l}{Parámetros} & \multicolumn{1}{l}{MSE Densidad} & \multicolumn{1}{l}{MSE Temperatura} \\ \hline
+$\text{L}_1$, $N_{c,1}$, $w_1$ & 0.049442 & 0.022991 \\
+$\text{L}_2$, $N_{c,1}$, $w_1$ & 0.049955 & 0.022830 \\
+$\text{L}_3$, $N_{c,1}$, $w_1$ & 0.048319 & 0.022528 \\
+$\text{L}_1$, $N_{c,2}$, $w_2$ & 0.048447 & 0.023023 \\
+$\text{L}_2$, $N_{c,2}$, $w_2$ & 0.049100 & 0.022951 \\
+$\text{L}_3$, $N_{c,2}$, $w_2$ & 0.051410 & 0.022620 \\
+$\text{L}_1$, $N_{c,3}$, $w_3$ & 0.050697 & 0.021823 \\
+$\text{L}_2$, $N_{c,3}$, $w_3$ & 0.052272 & 0.021810 \\
+$\text{L}_3$, $N_{c,3}$, $w_3$ & 0.115087 & 0.021799 \\ \hline
+\end{tabular}
+\end{table}
 
 \section{Conclusiones}
 
