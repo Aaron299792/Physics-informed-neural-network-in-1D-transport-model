@@ -117,7 +117,7 @@ def dT_op(rho, y, X):
     return dT_rho
 
 def boundary(rho, on_boundary):
-    return on_boundary and dde.utils.isclose(rho[0], 0.0)
+    return on_boundary and dde.utils.isclose(rho[0], 0.01234568)
 
 def visualize(x, sol1, sol2):
     plt.scatter(x, sol1, marker='h', color='k', label="n(x) PINN")
@@ -131,7 +131,7 @@ def visualize(x, sol1, sol2):
 # MAIN PROGRAM
 #--------------------------------
 ode = ode_gen()
-geom = dde.geometry.TimeDomain(0.0, 0.975)
+geom = dde.geometry.TimeDomain(0.01234568, 1.0)
 bc1 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=0)
 bc2 = dde.icbc.IC(geom, lambda rho : 1.0, boundary, component=1)
 bc3 = dde.icbc.OperatorBC(geom, dn_op, boundary)
@@ -145,7 +145,7 @@ attempts = 1
 
 while True:
     try:
-        sol, res = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
+        sol, res, loss_history, train_state = solver.sol(ode, geom, [bc1, bc2, bc3, bc4], x_eval, weights=net_params.weights, refinement=True)
         print(f"attemps: {attempts}")
         break
     except KeyboardInterrupt:
@@ -169,3 +169,5 @@ print("Output written in: ", pathOutput)
 
 if v:
     visualize(x_eval, sol[:,0], sol[:,1])
+
+dde.utils.external.save_loss_history(loss_history, '../../data/profile/loss_history.dat')
