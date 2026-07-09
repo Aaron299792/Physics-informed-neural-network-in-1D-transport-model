@@ -2,16 +2,16 @@ set term epslatex standalone color
 
 set output "out.tex"
 
-#set yrange [0:1.1]
+set yrange [0.00001:1]
 set logscale y
 set format y "$10^{%L}$" 
-set ylabel "\\textbf{Error Relativo} ($\\%$)"
+set ylabel "\\textbf{Error Absoluto}"
 set xlabel "\\textbf{Radio} $\\rho$"
 set border linewidth 5
 set key left
 
-plot  "error.dat" u 1:2 w lp lw 3.0 ps 1.5 pt 15 lc rgb "#0A36AF" title "$\\varepsilon_{\\hat{n}}$",\
-      "error.dat" u 1:3 w lp lw 3.0 ps 1.5 pt 11 lc rgb "#670010" title "$\\varepsilon_{\\hat{T}}$",\
+plot  "../../data/profile/residualcurves.dat" u 1:2 sm cspline w l lw 5 dt 3 lc rgb "#0A36AF" title "$\\varepsilon_{\\hat{n}}$",\
+      "../../data/profile/residualcurves.dat" u 1:3 sm cspline w l lw 5 lc rgb "#670010" title "$\\varepsilon_{\\hat{T}}$",\
 
 #set label "$n_0 = 1.000$" at graph 0.27, graph 0.28 right 
 #set label "$\\mathcal{P} = 0.403$" at graph 0.27, graph 0.21 right

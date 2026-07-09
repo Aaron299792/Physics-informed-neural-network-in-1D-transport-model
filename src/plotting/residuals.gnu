@@ -2,15 +2,16 @@ set term epslatex standalone color
 
 set output "out.tex"
 
-#set yrange [0:1.1]
-set logscale y
-set format y "$10^{%L}$" 
-set ylabel "\\textbf{Residuo} $|\\mathcal{N}(r, \\partial_r \\hat{n}, \\partial_r \\hat{T}, \\partial_r^2 \\hat{n}, \\partial_r^2\\hat{T}, \\Psi)|$"
+#set xrange [0:6999.99]
+#set yrange [0: 0.08]
+#set logscale y
+#set format y "$10^{%L}$" 
+set ylabel "Funci\\'on de p\\'erdida $\\mathcal{L}$"
 set xlabel "\\textbf{Radio} $\\rho$"
 set border linewidth 5
 
-plot  "202606221339.dat" u 1:(abs($4)) w lp lw 3.0 ps 1.5 pt 15 lc rgb "#0A36AF" title "ODE $\\hat{n}$",\
-      "202606221339.dat" u 1:(abs($5)) w lp lw 3.0 ps 1.5 pt 11 lc rgb "#670010" title "ODE $\\hat{T}$",\
+plot  "../../data/profile/loss_history.dat" u 1:4 w l lw 3.0 lc rgb "#0A36AF" title "$n$",\
+      "../../data/profile/loss_history.dat" u 1:10 w l lw 3.0 lc rgb "#670010" title "$T$",\
 
 #set label "$n_0 = 1.000$" at graph 0.27, graph 0.28 right 
 #set label "$\\mathcal{P} = 0.403$" at graph 0.27, graph 0.21 right
