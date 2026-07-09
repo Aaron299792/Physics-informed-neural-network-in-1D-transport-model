@@ -11,3 +11,5 @@ To run the code, the user must set a virtual environment with all the required c
 `conda env create -f environment.yml`
 
 This will set up the environment. Users are free to handle the package version and environment settings on their own. However, be aware that the code may not run as intended. Users may find the required packages and versions in the file [environment](environment.yaml). 
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21285901.svg)](https://doi.org/10.5281/zenodo.21285901)
