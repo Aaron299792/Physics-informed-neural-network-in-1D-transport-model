@@ -26,7 +26,7 @@ hidden_layers : 32
 # MODEL PARAMETERS
 #---------------------------
 model_params:
-  NUM_DOMAIN : 1000
+  NUM_DOMAIN : 5000
   NUM_BOUNDARY : 1
   NUM_TEST : 300
   LOSS_WEIGHTS : [0.1, 0.001, 1.0, 1.0, 0.01, 0.01]
@@ -35,4 +35,4 @@ model_params:
 #---------------------------
 # PREDICTION PARAMETERS
 #---------------------------
-num_observations : 40
+num_observations : 41
