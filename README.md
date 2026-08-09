@@ -16,7 +16,7 @@ This will set up the environment. Users are free to handle the package version a
 
 ### Running the driver `pinn.py`
 
-To run the driver [pinn.py](src/drivers/pinn.py), you must:
+To run the driver [pinn](src/drivers/pinn.py), you must:
 -  use a configuration file in the following path: "parameters/", which you can edit with the device features
 -  run the command: `python pinn.py --f [name of the configuration file] --v [optional, if you want to visualize the plot of the solution]`
 -  the output file is saved in the path: "data/profile/YYYYMMDDHHMMSS.dat"
