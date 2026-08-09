@@ -6,17 +6,23 @@ The PINN was implemented using [`DeepXDE`](https://deepxde.readthedocs.io/en/lat
 
 ## Environment setting
 
-To run the code, the user must set a virtual environment with all the required compatible packages. The easiest way to do it is to run the command:
+To run the code, the user must set up a virtual environment with all the required compatible packages. The easiest way to do it is to run the command:
 
 `conda env create -f environment.yml`
 
 This will set up the environment. Users are free to handle the package version and environment settings on their own. However, be aware that the code may not run as intended. Users may find the required packages and versions in the file [environment](environment.yml). 
 
-## Detailed instructions to run the driver
+## Detailed instructions to run code
+
+### Running the driver `pinn.py`
 
 To run the driver [pinn.py](src/drivers/pinn.py), you must:
--  use a configuration file in the following path: parameters/, which you can edit with the device features
+-  use a configuration file in the following path: "parameters/", which you can edit with the device features
 -  run the command: `python pinn.py --f [name of the configuration file] --v [optional, if you want to visualize the plot of the solution]`
 -  the output file is saved in the path: "data/profile/YYYYMMDDHHMMSS.dat"
+
+### Running the test files
+It suffices to run the command: `python file.py` to run test files, where file.py is a file within the path "test/".
+
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21285901.svg)](https://doi.org/10.5281/zenodo.21285901)
