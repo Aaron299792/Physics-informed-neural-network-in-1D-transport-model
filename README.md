@@ -21,6 +21,8 @@ To run the driver [pinn](src/drivers/pinn.py), you must:
 -  run the command: `python pinn.py --f [name of the configuration file] --v [optional, if you want to visualize the plot of the solution]`
 -  the output file is saved in the path: "data/profile/YYYYMMDDHHMMSS.dat"
 
+Output file label example: 20260812214343.dat
+
 ### Running the test files
 It suffices to run the command: `python file.py` to run test files, where file.py is a file within the path "test/".
 
